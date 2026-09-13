@@ -107,6 +107,9 @@ def _download(url: str, output_file: str) -> None:
 def _generate_video_minimax(
     prompt: str, reference_images: list[str], output_file: str
 ) -> str:
+    # Named minimax_api_key (not api_key) on purpose: the skill scanner's
+    # secret-env-assignment rule flags any 'api_key =' LHS; see
+    # test_video_generation_runtime_credentials_pass_skill_review.
     minimax_api_key = os.getenv("MINIMAX_API_KEY")
     if not minimax_api_key:
         return "MINIMAX_API_KEY is not set"
@@ -187,12 +190,20 @@ def _generate_video_gemini(
     return f"The video has been generated successfully to {output_file}"
 
 
+SUPPORTED_ASPECT_RATIOS = ("16:9", "9:16")
+
+
 def generate_video(
     prompt_file: str,
     reference_images: list[str],
     output_file: str,
     aspect_ratio: str = "16:9",
 ) -> str:
+    if aspect_ratio not in SUPPORTED_ASPECT_RATIOS:
+        raise ValueError(
+            f"Unsupported aspect ratio {aspect_ratio!r}; Gemini Veo supports "
+            f"{', '.join(SUPPORTED_ASPECT_RATIOS)}"
+        )
     with open(prompt_file, "r", encoding="utf-8") as f:
         prompt = f.read()
     provider = _resolve_provider(
@@ -217,7 +228,7 @@ if __name__ == "__main__":
                         help="Absolute paths to reference images (space-separated)")
     parser.add_argument("--output-file", required=True, help="Output path for generated video")
     parser.add_argument("--aspect-ratio", required=False, default="16:9",
-                        help="Aspect ratio of the generated video (Gemini only)")
+                        help="Aspect ratio of the generated video (Gemini only; supported: 16:9, 9:16)")
     args = parser.parse_args()
 
     try:

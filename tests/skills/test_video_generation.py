@@ -230,3 +230,12 @@ def test_gemini_forwards_aspect_ratio_to_predict_request(monkeypatch, tmp_path):
 
     assert "predictLongRunning" in captured["url"]
     assert captured["json"]["parameters"]["aspectRatio"] == "9:16"
+
+
+def test_generate_video_rejects_unsupported_aspect_ratio(monkeypatch, tmp_path):
+    monkeypatch.setenv("GEMINI_API_KEY", "g")
+    pf = tmp_path / "p.json"
+    pf.write_text("a square cat", encoding="utf-8")
+
+    with pytest.raises(ValueError, match="Unsupported aspect ratio"):
+        vid.generate_video(str(pf), [], str(tmp_path / "v.mp4"), "1:1")
